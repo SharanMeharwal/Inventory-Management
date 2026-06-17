@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Inventory Manager</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --ink: #18211f;
+      --muted: #62706a;
+      --line: #d9d2c4;
+      --panel: #fffdf8;
+      --green: #167a52;
+      --green-soft: #dff3e8;
+      --red: #b3372f;
+      --red-soft: #f8dfdd;
+      --amber: #a86605;
+      --amber-soft: #f7ead4;
+      --blue: #245f9f;
+      --blue-soft: #deebf8;
+      --shadow: 0 10px 30px rgba(30, 35, 31, .09);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    aside {
+      background: #1f2a27;
+      color: white;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: #c9d6d0;
+      font-size: 14px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav button {
+      border: 0;
+      border-radius: 8px;
+      padding: 15px 14px;
+      text-align: left;
+      background: rgba(255, 255, 255, .08);
+      color: white;
+      cursor: pointer;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    .nav button.active {
+      background: white;
+      color: #1f2a27;
+    }
+
+    .help {
+      margin-top: auto;
+      color: #dbe8e3;
+      background: rgba(255, 255, 255, .08);
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    main {
+      padding: 24px;
+      overflow: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .store-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .store-picker select {
+      min-width: 170px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px;
+      background: white;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel, .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel h3, .table-wrap h3 {
+      margin: 0 0 14px;
+      font-size: 21px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin: 14px 0 7px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 15px 13px;
+      min-height: 52px;
+      background: white;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .primary, .secondary, .danger {
+      border: 0;
+      border-radius: 8px;
+      padding: 15px 16px;
+      min-height: 54px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--green);
+      color: white;
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .secondary {
+      background: var(--blue-soft);
+      color: #143d67;
+    }
+
+    .danger {
+      background: var(--red-soft);
+      color: #7c1b15;
+    }
+
+    .quick-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .quick-buttons button {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      min-height: 46px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+    }
+
+    .table-head {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-head input {
+      max-width: 260px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 13px 14px;
+      border-bottom: 1px solid #eee8dc;
+      vertical-align: middle;
+    }
+
+    th {
+      color: #48554f;
+      font-size: 13px;
+      text-transform: uppercase;
+      background: #faf7ef;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .ok { background: var(--green-soft); color: #0f6844; }
+    .low { background: var(--amber-soft); color: #7d4b00; }
+    .out { background: var(--red-soft); color: #8d251e; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      background: #1f2a27;
+      color: white;
+      padding: 14px 16px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: .2s ease;
+      pointer-events: none;
+      max-width: 320px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .log {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .entry {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .entry b { display: block; margin-bottom: 4px; }
+    .entry span { color: var(--muted); font-size: 14px; }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0 0 16px;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 14px;
+      }
+      .brand h1 { font-size: 22px; }
+      .nav {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .nav button {
+        justify-content: center;
+        text-align: center;
+        padding: 12px 8px;
+        font-size: 14px;
+      }
+      .help { display: none; }
+      main { padding: 16px; }
+      .topbar { display: block; }
+      .store-picker { margin-top: 12px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+      .table-head { display: block; }
+      .table-head input { max-width: none; margin-top: 10px; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      td {
+        border: 0;
+        padding: 7px 14px;
+      }
+      td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 800;
+        margin-bottom: 3px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .nav { grid-template-columns: repeat(2, 1fr); }
+      .metrics { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+      .quick-buttons { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>Inventory Desk</h1>
+        <p>Simple stock control for 6 stores</p>
+      </div>
+      <div class="nav" aria-label="Main menu">
+        <button class="active" data-view="dashboard">📦 Stock</button>
+        <button data-view="receive">⬇ Receive</button>
+        <button data-view="sell">⬆ Sell</button>
+        <button data-view="report">📊 Report</button>
+      </div>
+      <div class="help">
+        Use one store at a time. Every stock entry, sale, and correction is saved on this device automatically.
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h2 id="pageTitle">Live Stock</h2>
+          <p id="pageSubtitle">See what is available, low, or finished right now.</p>
+        </div>
+        <div class="store-picker">
+          <strong>Store</strong>
+          <select id="storeSelect" aria-label="Select store"></select>
+        </div>
+      </div>
+
+      <section class="metrics" aria-label="Inventory summary">
+        <div class="metric"><b id="totalProducts">0</b><span>Products</span></div>
+        <div class="metric"><b id="stockUnits">0</b><span>Total units</span></div>
+        <div class="metric"><b id="lowCount">0</b><span>Low stock</span></div>
+        <div class="metric"><b id="stockValue">₹0</b><span>Stock value</span></div>
+      </section>
+
+      <section id="dashboard" class="view active">
+        <div class="toolbar">
+          <button class="secondary" id="exportBtn">Download CSV</button>
+          <button class="secondary" id="sampleBtn">Load sample products</button>
+          <button class="danger" id="resetBtn">Clear this store</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <h3>Products in store</h3>
+            <input id="searchStock" type="search" placeholder="Search product">
+          </div>
+          <div id="stockTable"></div>
+        </div>
+      </section>
+
+      <section id="receive" class="view">
+        <div class="grid">
+          <form class="panel" id="receiveForm">
+            <h3>Stock coming in</h3>
+            <label for="receiveProduct">Product name</label>
+            <input id="receiveProduct" required placeholder="Example: Rice 10 kg">
+            <div class="row">
+              <div>
+                <label for="receiveQty">Quantity</label>
+                <input id="receiveQty" type="number" min="1" step="1" required value="1">
+                <div class="quick-buttons" data-target="receiveQty">
+                  <button type="button">+1</button>
+                  <button type="button">+5</button>
+                  <button type="button">+10</button>
+                </div>
+              </div>
+              <div>
+                <label for="receivePrice">Cost / unit</label>
+                <input id="receivePrice" type="number" min="0" step="0.01" required value="0">
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="receiveSell">Selling price</label>
+                <input id="receiveSell" type="number" min="0" step="0.01" required value="0">
+              </div>
+              <div>
+                <label for="receiveMin">Minimum stock</label>
+                <input id="receiveMin" type="number" min="0" step="1" required value="5">
+              </div>
+            </div>
+            <label for="supplier">Supplier / note</label>
+            <input id="supplier" placeholder="Optional">
+            <button class="primary" type="submit">Save incoming stock</button>
+          </form>
+          <div class="table-wrap">
+            <div class="table-head"><h3>Recent entries</h3></div>
+            <div id="receiveLog" class="log"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sell" class="view">
+        <div class="grid">
+          <form class="panel" id="sellForm">
+            <h3>Stock going out</h3>
+            <label for="sellProduct">Product</label>
+            <select id="sellProduct" required></select>
+            <label for="sellQty">Quantity sold</label>
+            <input id="sellQty" type="number" min="1" step="1" required value="1">
+            <div class="quick-buttons" data-target="sellQty">
+              <button type="button">+1</button>
+              <button type="button">+5</button>
+              <button type="button">+10</button>
+            </div>
+            <label for="buyer">Buyer / bill note</label>
+            <input id="buyer" placeholder="Optional">
+            <button class="primary" type="submit">Save sale</button>
+          </form>
+          <div class="table-wrap">
+            <div class="table-head"><h3>Recent sales</h3></div>
+            <div id="sellLog" class="log"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="report" class="view">
+        <div class="grid">
+          <div class="panel">
+            <h3>Today summary</h3>
+            <div class="metric"><b id="todayIn">0</b><span>Units received today</span></div>
+            <br>
+            <div class="metric"><b id="todayOut">0</b><span>Units sold today</span></div>
+            <br>
+            <div class="metric"><b id="profitEstimate">₹0</b><span>Estimated margin on current stock</span></div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head"><h3>All activity</h3></div>
+            <div id="activityLog" class="log"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const stores = ["Store 1", "Store 2", "Store 3", "Store 4", "Store 5", "Store 6"];
+    const key = "ruralInventoryDesk.v1";
+    const sampleProducts = [
+      ["Rice 10 kg", 20, 420, 485, 6],
+      ["Wheat flour 5 kg", 30, 165, 210, 8],
+      ["Cooking oil 1 L", 18, 118, 145, 5],
+      ["Sugar 1 kg", 24, 38, 46, 7],
+      ["Tea 250 g", 12, 72, 90, 4],
+      ["Soap bar", 40, 22, 30, 10]
+    ];
+
+    let data = load();
+    let currentStore = localStorage.getItem("ruralInventoryDesk.store") || stores[0];
+
+    const $ = id => document.getElementById(id);
+    const money = value => "₹" + Math.round(value).toLocaleString("en-IN");
+    const today = () => new Date().toISOString().slice(0, 10);
+
+    function load() {
+      const saved = localStorage.getItem(key);
+      if (saved) return JSON.parse(saved);
+      const fresh = {};
+      stores.forEach(store => fresh[store] = { products: [], activity: [] });
+      return fresh;
+    }
+
+    function save() {
+      localStorage.setItem(key, JSON.stringify(data));
+      localStorage.setItem("ruralInventoryDesk.store", currentStore);
+    }
+
+    function storeData() {
+      return data[currentStore];
+    }
+
+    function findProduct(name) {
+      return storeData().products.find(p => p.name.toLowerCase() === name.trim().toLowerCase());
+    }
+
+    function addActivity(type, product, qty, note, price) {
+      storeData().activity.unshift({
+        type,
+        product,
+        qty: Number(qty),
+        note: note || "",
+        price: Number(price || 0),
+        time: new Date().toLocaleString()
+      });
+      storeData().activity = storeData().activity.slice(0, 100);
+    }
+
+    function toast(message) {
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      setTimeout(() => $("toast").classList.remove("show"), 2200);
+    }
+
+    function statusFor(product) {
+      if (product.qty <= 0) return ["Finished", "out"];
+      if (product.qty <= product.min) return ["Low", "low"];
+      return ["OK", "ok"];
+    }
+
+    function render() {
+      const s = storeData();
+      const products = s.products;
+      $("totalProducts").textContent = products.length;
+      $("stockUnits").textContent = products.reduce((sum, p) => sum + p.qty, 0);
+      $("lowCount").textContent = products.filter(p => p.qty <= p.min).length;
+      $("stockValue").textContent = money(products.reduce((sum, p) => sum + p.qty * p.cost, 0));
+
+      const filter = $("searchStock").value.trim().toLowerCase();
+      const visible = products.filter(p => p.name.toLowerCase().includes(filter));
+      $("stockTable").innerHTML = visible.length ? productTable(visible) : `<div class="empty">No products found.</div>`;
+
+      $("sellProduct").innerHTML = products.length
+        ? products.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} - ${p.qty} left</option>`).join("")
+        : `<option value="">No products yet</option>`;
+
+      renderLog("receiveLog", s.activity.filter(a => a.type === "IN").slice(0, 8));
+      renderLog("sellLog", s.activity.filter(a => a.type === "OUT").slice(0, 8));
+      renderLog("activityLog", s.activity.slice(0, 30));
+
+      const todayActivity = s.activity.filter(a => a.time.includes(new Date().toLocaleDateString()));
+      $("todayIn").textContent = todayActivity.filter(a => a.type === "IN").reduce((sum, a) => sum + a.qty, 0);
+      $("todayOut").textContent = todayActivity.filter(a => a.type === "OUT").reduce((sum, a) => sum + a.qty, 0);
+      $("profitEstimate").textContent = money(products.reduce((sum, p) => sum + p.qty * (p.sell - p.cost), 0));
+    }
+
+    function productTable(products) {
+      return `<table>
+        <thead><tr><th>Product</th><th>Qty</th><th>Cost</th><th>Sell</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${products.map(p => {
+          const [text, cls] = statusFor(p);
+          return `<tr>
+            <td data-label="Product"><b>${escapeHtml(p.name)}</b><br><span>Minimum: ${p.min}</span></td>
+            <td data-label="Qty">${p.qty}</td>
+            <td data-label="Cost">${money(p.cost)}</td>
+            <td data-label="Sell">${money(p.sell)}</td>
+            <td data-label="Status"><span class="status ${cls}">${text}</span></td>
+            <td data-label="Action"><div class="actions">
+              <button onclick="quickReceive('${encodeURIComponent(p.name)}')">+ Stock</button>
+              <button onclick="quickSell('${encodeURIComponent(p.name)}')">Sell</button>
+            </div></td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`;
+    }
+
+    function renderLog(id, entries) {
+      $(id).innerHTML = entries.length ? entries.map(a => `
+        <div class="entry">
+          <div>
+            <b>${a.type === "IN" ? "Received" : "Sold"} ${a.qty} - ${escapeHtml(a.product)}</b>
+            <span>${escapeHtml(a.note || "No note")} · ${a.time}</span>
+          </div>
+          <strong>${a.type === "IN" ? "+" : "-"}${a.qty}</strong>
+        </div>`).join("") : `<div class="empty">No entries yet.</div>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[ch]));
+    }
+
+    function switchView(view) {
+      document.querySelectorAll(".view").forEach(el => el.classList.toggle("active", el.id === view));
+      document.querySelectorAll(".nav button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+      const titles = {
+        dashboard: ["Live Stock", "See what is available, low, or finished right now."],
+        receive: ["Receive Stock", "Add products when delivery arrives at the store."],
+        sell: ["Sell Stock", "Reduce stock immediately after sale or transfer."],
+        report: ["Reports", "Review movement and margin for the selected store."]
+      };
+      $("pageTitle").textContent = titles[view][0];
+      $("pageSubtitle").textContent = titles[view][1];
+      render();
+    }
+
+    function quickReceive(encodedName) {
+      const product = findProduct(decodeURIComponent(encodedName));
+      if (!product) return;
+      $("receiveProduct").value = product.name;
+      $("receivePrice").value = product.cost;
+      $("receiveSell").value = product.sell;
+      $("receiveMin").value = product.min;
+      $("receiveQty").value = 1;
+      switchView("receive");
+    }
+
+    function quickSell(encodedName) {
+      $("sellProduct").value = decodeURIComponent(encodedName);
+      $("sellQty").value = 1;
+      switchView("sell");
+    }
+
+    function downloadCsv() {
+      const rows = [["Store", "Product", "Quantity", "Cost", "Selling Price", "Minimum Stock", "Status"]];
+      storeData().products.forEach(p => rows.push([currentStore, p.name, p.qty, p.cost, p.sell, p.min, statusFor(p)[0]]));
+      const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${currentStore.replace(/\s+/g, "-").toLowerCase()}-inventory.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    $("storeSelect").innerHTML = stores.map(store => `<option>${store}</option>`).join("");
+    $("storeSelect").value = currentStore;
+    $("storeSelect").addEventListener("change", event => {
+      currentStore = event.target.value;
+      save();
+      render();
+      toast(`Showing ${currentStore}`);
+    });
+
+    document.querySelectorAll(".nav button").forEach(btn => {
+      btn.addEventListener("click", () => switchView(btn.dataset.view));
+    });
+
+    document.querySelectorAll(".quick-buttons").forEach(group => {
+      group.addEventListener("click", event => {
+        if (event.target.tagName !== "BUTTON") return;
+        const input = $(group.dataset.target);
+        input.value = Number(input.value || 0) + Number(event.target.textContent.replace("+", ""));
+      });
+    });
+
+    $("receiveForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const name = $("receiveProduct").value.trim();
+      const qty = Number($("receiveQty").value);
+      let product = findProduct(name);
+      if (!product) {
+        product = { name, qty: 0, cost: 0, sell: 0, min: 0 };
+        storeData().products.push(product);
+      }
+      product.qty += qty;
+      product.cost = Number($("receivePrice").value);
+      product.sell = Number($("receiveSell").value);
+      product.min = Number($("receiveMin").value);
+      addActivity("IN", product.name, qty, $("supplier").value, product.cost);
+      save();
+      event.target.reset();
+      $("receiveQty").value = 1;
+      $("receivePrice").value = 0;
+      $("receiveSell").value = 0;
+      $("receiveMin").value = 5;
+      render();
+      toast("Incoming stock saved");
+    });
+
+    $("sellForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const product = findProduct($("sellProduct").value);
+      const qty = Number($("sellQty").value);
+      if (!product) return toast("Add product first");
+      if (qty > product.qty) return toast(`Only ${product.qty} available`);
+      product.qty -= qty;
+      addActivity("OUT", product.name, qty, $("buyer").value, product.sell);
+      save();
+      $("sellQty").value = 1;
+      $("buyer").value = "";
+      render();
+      toast("Sale saved");
+    });
+
+    $("searchStock").addEventListener("input", render);
+    $("exportBtn").addEventListener("click", downloadCsv);
+    $("sampleBtn").addEventListener("click", () => {
+      sampleProducts.forEach(([name, qty, cost, sell, min]) => {
+        let product = findProduct(name);
+        if (!product) {
+          product = { name, qty: 0, cost, sell, min };
+          storeData().products.push(product);
+        }
+        product.qty += qty;
+        product.cost = cost;
+        product.sell = sell;
+        product.min = min;
+        addActivity("IN", name, qty, "Sample opening stock", cost);
+      });
+      save();
+      render();
+      toast("Sample products loaded");
+    });
+    $("resetBtn").addEventListener("click", () => {
+      if (!confirm(`Clear all data for ${currentStore}?`)) return;
+      data[currentStore] = { products: [], activity: [] };
+      save();
+      render();
+      toast(`${currentStore} cleared`);
+    });
+
+    render();
+  </script>
+</body>
+</html>
